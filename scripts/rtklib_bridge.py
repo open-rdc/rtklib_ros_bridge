@@ -21,8 +21,11 @@ class RtklibBridge:
 
     def connect(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        self.client.connect((self.server_address, self.server_port))
+        try:
+            self.client.connect((self.server_address, self.server_port))
+        except socket.error:
+            raise
+        return True
 
     def gpst2time(self, week, sec):
         gpst0 =  t = time.mktime(datetime.datetime(1980, 1, 6, 0, 0, 0).timetuple())
@@ -32,12 +35,22 @@ class RtklibBridge:
         return t
 
     def get_solution(self):
-        receive = self.client.recv(4096)
+        try:
+            receive = self.client.recv(4096)
+        except socket.error:
+            raise
+
+        if not receive:
+            raise ValueError("Not received")
 
         # receive example
         # 1918 352534.000   35.674540574  139.531064244    94.6605   5   9   3.3592   2.1315   7.6682  -0.8273   1.5609  -2.0968   0.00    0.0
 
         receive_split = receive.split()
+        if len(receive_split) is not 15:
+            raise ValueError("Receive data length is not 15")
+
+        print receive_split
 
         t = self.gpst2time(receive_split[0], receive_split[1])
         latitude = float(receive_split[2])
@@ -53,20 +66,45 @@ class RtklibBridge:
         return ret
 
     def spin(self):
-        while not rospy.is_shutdown():
-            rate = rospy.Rate(10)
+        rate = rospy.Rate(10)
 
+        try:
             pub_nav_sat = self.get_solution()
+        except:
+            raise
 
-            self.pub.publish(pub_nav_sat)
+        self.pub.publish(pub_nav_sat)
 
-            rate.sleep()
+        rate.sleep()
+        return True
+
+    def close_connection(self):
+        self.client.close()
 
 
 if __name__ == '__main__':
     bridge = RtklibBridge()
-    try:
-        bridge.connect()
-        bridge.spin()
-    except rospy.ROSInterruptException:
-        pass
+    is_connection = False
+
+    while not rospy.is_shutdown():
+        if not is_connection:
+            try:
+                is_connection = bridge.connect()
+            except socket.error as e:
+                rospy.logerr(e)
+                is_connection = False
+
+        else:
+            try:
+                bridge.spin()
+            except socket.error as e:
+                rospy.logerr(e)
+                bridge.close_connection()
+                is_connection = False
+            except ValueError as e:
+                rospy.logerr(e)
+                bridge.close_connection()
+                is_connection = False
+            except rospy.ROSInterruptException:
+                bridge.close_connection()
+                pass
