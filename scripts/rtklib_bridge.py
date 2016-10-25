@@ -14,7 +14,7 @@ class RtklibBridge:
 
         self.pub = rospy.Publisher('~gps_solution', NavSatFix, queue_size=10)
 
-        self.server_address =  rospy.get_param('~rtklib_server_address', '127.0.0.1')
+        self.server_address =  rospy.get_param('rtklib_server_address', '127.0.0.1')
         self.server_port = rospy.get_param('~rtklib_server_port', 52001)
 
         self.covariance_table =[0, 3, 2, 0, 1]
