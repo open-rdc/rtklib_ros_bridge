@@ -1,6 +1,5 @@
 <?xml version="1.0"?>
 
 <launch>
-    <node pkg="rtklib_ros_bridge" type="start_rtkrcv.sh" name="start_rtkrcv" />
     <node pkg="rtklib_ros_bridge" type="rtklib_bridge.py" name="rtk_ros_bridge" output="screen" />
 </launch>

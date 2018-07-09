@@ -17,7 +17,7 @@ class RtklibBridge:
         self.server_address =  rospy.get_param('~rtklib_server_address', '127.0.0.1')
         self.server_port = rospy.get_param('~rtklib_server_port', 52001)
 
-        self.covariance_table =[0, 3, 2, 0, 1]
+        self.covariance_table =[3, 2, 0, 0, 1]
 
     def connect(self):
         self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
